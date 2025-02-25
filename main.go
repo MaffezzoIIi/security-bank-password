@@ -1,7 +1,5 @@
 package main
 
-var limitBreak = 0
-
 func permute(nums, current []int, used []bool, results *[][]int) {
 
 	if len(current) == len(nums) {
@@ -36,5 +34,4 @@ func main() {
 	used := make([]bool, len(numbers))
 
 	permute(numbers, []int{}, used, &results)
-
 }
