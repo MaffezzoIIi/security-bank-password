@@ -1,7 +1,6 @@
 package password
 
 import (
-	"fmt"
 	"math/rand/v2"
 )
 
@@ -66,7 +65,6 @@ func GenerateValidatorDigit(pn [][]int) int {
 		count++
 	}
 
-	fmt.Println(validator)
 	return validator % 99
 }
 
