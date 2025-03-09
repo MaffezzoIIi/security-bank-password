@@ -1,56 +1,74 @@
 package main
 
 import (
-	"fmt"
-	"math/rand/v2"
+	"security-bank-password/password"
+
+	"github.com/gin-gonic/gin"
 )
 
-func permute(nums, current []int, used []bool, results *[][]int) {
-
-	if len(current) == len(nums) {
-		temp := make([]int, len(current))
-		copy(temp, current)
-		*results = append(*results, temp)
-		return
-	}
-
-	for i := range nums {
-		if !used[i] {
-			used[i] = true
-			current = append(current, nums[i])
-
-			permute(nums, current, used, results)
-
-			current = current[:len(current)-1]
-			used[i] = false
-		}
-	}
-}
-
-func generatePairArray(results [][]int) [][]int {
-	pn := make([][]int, 5)
-
-	t := results[rand.IntN(len(results))]
-
-	aux := 0
-	for i := range 5 {
-		pn[i] = make([]int, 2)
-		pn[i][0] = t[aux]
-		pn[i][1] = t[aux+1]
-		aux += 2
-	}
-
-	return pn
-}
-
 func main() {
-	numbers := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}
+	r := gin.Default()
 
-	var results [][]int
+	p := password.GeneratePermutions()
 
-	used := make([]bool, len(numbers))
+	r.GET("/pairs", func(c *gin.Context) {
+		gp := password.GeneratePair(p)
 
-	permute(numbers, []int{}, used, &results)
+		c.JSON(200, gin.H{
+			"pairs":     gp,
+			"validator": password.GenerateValidatorDigit(gp),
+		})
+	})
 
-	fmt.Println(generatePairArray(results))
+	r.POST("/login", func(ctx *gin.Context) {
+		var loginRequest struct {
+			Pairs     [][]int `json:"pairs"`
+			Validator int     `json:"validator"`
+			Password  [][]int `json:"password"`
+		}
+
+		if err := ctx.BindJSON(&loginRequest); err != nil {
+			ctx.JSON(400, gin.H{"error": "Invalid request"})
+			return
+		}
+
+		if len(loginRequest.Pairs) == 0 {
+			ctx.JSON(401, gin.H{"error": "Unauthorized"})
+			return
+		}
+
+		if loginRequest.Validator == 0 {
+			ctx.JSON(401, gin.H{"error": "Unauthorized"})
+			return
+		}
+
+		if loginRequest.Validator != password.GenerateValidatorDigit(loginRequest.Pairs) {
+			ctx.JSON(401, gin.H{"error": "Unauthorized"})
+			return
+		}
+
+		if !password.ValidatePasswordPairs(loginRequest.Pairs, loginRequest.Password) {
+			ctx.JSON(401, gin.H{"error": "Unauthorized"})
+			return
+		}
+
+		if loginRequest.Password == nil || len(loginRequest.Password) != 5 {
+			ctx.JSON(400, gin.H{"error": "Password is required and must have 5 pairs"})
+			return
+		}
+
+		ps := "12345"
+		for i := range loginRequest.Password {
+			pair := loginRequest.Password[i]
+
+			if int(ps[i]-'0') != pair[0] && int(ps[i]-'0') != pair[1] {
+				ctx.JSON(401, gin.H{"error": "Invalid password"})
+				return
+			}
+		}
+
+		ctx.JSON(200, gin.H{"message": "Welcome!"})
+	})
+
+	r.Run()
 }
