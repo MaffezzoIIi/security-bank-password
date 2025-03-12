@@ -42,8 +42,6 @@ func generatePairArray(results [][]int) [][]int {
 	return pn
 }
 
-// aioefwsjrd
-
 func GenerateValidatorDigit(pn [][]int) int {
 	var validator int
 
